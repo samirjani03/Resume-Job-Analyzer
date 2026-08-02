@@ -1,0 +1,10 @@
+{
+  "name": "talentmatch-ai",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "backend": "start-backend.bat",
+    "frontend": "npm run dev --prefix frontend",
+    "dev": "start-backend.bat"
+  }
+}
