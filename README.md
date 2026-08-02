@@ -39,7 +39,8 @@ python -m venv backend/venv
 backend/venv/Scripts/pip install -r backend/requirements.txt
 
 # 3. Launch Backend Server
-python start.py
+cd c:\Users\janis\Desktop\Resume-Job-Analyzer
+backend\venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
 ```
 *(Backend runs live on **`http://localhost:8000`**)*
 
