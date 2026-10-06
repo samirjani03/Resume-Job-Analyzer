@@ -3,6 +3,8 @@ import json
 import re
 from typing import Dict, Any, List, Optional
 from app.config import settings
+from app.services.providers import PROVIDERS, default_context, resolve_context, get_provider
+from app.services.providers.base import ProviderContext
 
 DEGREE_KEYWORDS = [
     "bachelor", "master", "phd", "b.s", "b.sc", "b.tech", "m.s", "m.sc", "m.tech",
@@ -14,28 +16,36 @@ class LLMAnalyzer:
         self.ollama_url = f"{settings.OLLAMA_BASE_URL}/api/generate"
         self.model = settings.OLLAMA_MODEL
 
-    async def _call_ollama(self, prompt: str, system_prompt: str = "") -> Optional[str]:
-        """Calls local Ollama instance with extended 120s timeout for cloud/remote models."""
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "system": system_prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.1,
-                "top_p": 0.9
-            }
-        }
+    def _log_usage(self, ctx: ProviderContext) -> None:
+        """Records one successful LLM call for quota tracking. Never blocks analysis."""
+        if not ctx.device_id:
+            return
         try:
-            timeout_config = httpx.Timeout(120.0, connect=5.0)
-            async with httpx.AsyncClient(timeout=timeout_config) as client:
-                res = await client.post(self.ollama_url, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    return data.get("response", "")
+            from app.database import SessionLocal
+            from app.models.db_models import UsageLog
+
+            db = SessionLocal()
+            try:
+                db.add(UsageLog(device_id=ctx.device_id, provider=ctx.provider, model=ctx.model))
+                db.commit()
+            finally:
+                db.close()
         except Exception as e:
-            print(f"Ollama Call Note: {e}")
-        return None
+            print(f"Usage Log Note: {e}")
+
+    async def _call_llm(self, prompt: str, system_prompt: str = "", ctx: Optional[ProviderContext] = None) -> Optional[str]:
+        """
+        Dispatches to the resolved provider (Ollama local/cloud, Gemini, OpenRouter).
+        With ctx=None it uses config-driven local Ollama — identical to the legacy behavior.
+        """
+        if ctx is None:
+            ctx = default_context()
+        provider = get_provider(ctx.provider)
+        response = await provider.complete(prompt, system_prompt, ctx)
+        if response:
+            self._log_usage(ctx)
+        return response
+
 
     def _extract_json_from_llm(self, response_text: str) -> Optional[Dict[str, Any]]:
         """Extracts JSON block from LLM output, handling markdown ```json blocks cleanly."""
@@ -60,7 +70,7 @@ class LLMAnalyzer:
         t_lower = text.lower()
         return any(dk in t_lower for dk in DEGREE_KEYWORDS)
 
-    async def parse_open_schema_profile(self, text: str, is_job: bool = False) -> Dict[str, Any]:
+    async def parse_open_schema_profile(self, text: str, is_job: bool = False, ctx: Optional[ProviderContext] = None) -> Dict[str, Any]:
         """Parses text into an open-schema profile with dynamic section discovery and professional tech domain."""
         doc_type = "Job Description" if is_job else "Candidate Resume"
         prompt = f"""
@@ -79,7 +89,7 @@ Text:
 {text[:4500]}
         """
         system = "You are an AI resume and job description parser. Respond strictly with pure JSON."
-        llm_raw = await self._call_ollama(prompt, system)
+        llm_raw = await self._call_llm(prompt, system, ctx)
         if llm_raw:
             parsed = self._extract_json_from_llm(llm_raw)
             if parsed:
@@ -94,7 +104,8 @@ Text:
         self,
         candidate_text: str,
         job_text: str,
-        mode: str = "recruiter"
+        mode: str = "recruiter",
+        ctx: Optional[ProviderContext] = None
     ) -> Dict[str, Any]:
         """
         Comprehensive decision-support analysis for a candidate against a job description or domain-auto-detected target.
@@ -314,7 +325,7 @@ Respond ONLY in JSON with the exact following schema:
 }}
         """
         system = "You are an objective hiring decision-support analyst and master career mentor. Respond with pure JSON."
-        llm_raw = await self._call_ollama(prompt, system)
+        llm_raw = await self._call_llm(prompt, system, ctx)
         if llm_raw:
             res_json = self._extract_json_from_llm(llm_raw)
             if res_json:

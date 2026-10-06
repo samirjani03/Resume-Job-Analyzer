@@ -15,6 +15,7 @@ __pycache__/
 backend/talentmatch.db
 backend/chroma_db/
 backend/vectors.db
+backend/.encryption_key
 
 # Node.js & Vite Frontend
 frontend/node_modules/

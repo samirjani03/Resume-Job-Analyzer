@@ -37,20 +37,29 @@ class LightweightVectorStore:
 
     @property
     def model(self):
-        """Lazy load embedding model on demand."""
+        """Lazy load embedding model on demand (fastembed = ONNX, no torch)."""
         if self._model is None:
             try:
-                from sentence_transformers import SentenceTransformer
-                self._model = SentenceTransformer("all-MiniLM-L6-v2")
+                from fastembed import TextEmbedding
+                self._model = TextEmbedding(model_name=settings.EMBEDDING_MODEL)
             except Exception:
-                self._model = False
+                try:
+                    from fastembed import TextEmbedding
+                    self._model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
+                except Exception:
+                    self._model = False
         return self._model if self._model is not False else None
 
     def _get_embedding(self, text: str) -> List[float]:
         m = self.model
         if m:
-            return m.encode(text).tolist()
-        
+            try:
+                emb = list(m.embed(text))
+                if emb:
+                    return [float(v) for v in emb[0]]
+            except Exception:
+                pass
+
         # Fast fallback 384-dim normalized vector representation
         words = text.lower().split()
         vec = [0.0] * 384

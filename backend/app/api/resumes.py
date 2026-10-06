@@ -9,6 +9,8 @@ from app.services.document_parser import DocumentParser
 from app.services.pii_redactor import PIIRedactor
 from app.services.llm_analyzer import llm_analyzer
 from app.services.vector_store import vector_store
+from app.core.deps import provider_context, enforce_quota
+from app.services.providers.base import ProviderContext
 
 DEGREE_KEYWORDS = ["bachelor", "master", "phd", "b.s", "b.sc", "b.tech", "m.s", "m.sc", "m.tech", "degree", "university", "college", "gpa", "diploma", "education"]
 
@@ -54,7 +56,9 @@ router = APIRouter(prefix="/resumes", tags=["Resumes"])
 async def upload_resumes(
     files: List[UploadFile] = File(...),
     redact_pii: bool = Form(False),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _quota: None = Depends(enforce_quota),
+    ctx: ProviderContext = Depends(provider_context)
 ):
     saved_candidates = []
     
@@ -72,7 +76,7 @@ async def upload_resumes(
         if redact_pii:
             sanitized_text, _ = PIIRedactor.redact(raw_text)
 
-        parsed_profile = await llm_analyzer.parse_open_schema_profile(sanitized_text, is_job=False)
+        parsed_profile = await llm_analyzer.parse_open_schema_profile(sanitized_text, is_job=False, ctx=ctx)
         candidate_name = extract_clean_candidate_name(sanitized_text, parsed_profile, file.filename)
 
         candidate_db = CandidateResume(

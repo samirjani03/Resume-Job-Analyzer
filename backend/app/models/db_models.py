@@ -30,6 +30,32 @@ class CandidateResume(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class ApiKey(Base):
+    """Encrypted per-device AI provider configuration. Key material is never stored plain."""
+    __tablename__ = "api_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String(64), nullable=False, index=True)
+    provider = Column(String(50), nullable=False)
+    enc_key = Column(Text, nullable=True)          # Fernet token; NULL for Ollama local
+    base_url = Column(String(512), nullable=True)  # Ollama local/cloud override
+    model_default = Column(String(255), nullable=True)
+    last4 = Column(String(8), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class UsageLog(Base):
+    """One row per successful LLM call — powers the daily quota counter."""
+    __tablename__ = "usage_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    device_id = Column(String(64), nullable=True, index=True)
+    provider = Column(String(50), nullable=True)
+    model = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
 class AnalysisResult(Base):
     __tablename__ = "analysis_results"
 

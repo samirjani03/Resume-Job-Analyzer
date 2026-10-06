@@ -7,6 +7,8 @@ from app.schemas.schemas import JobDescriptionCreate, JobDescriptionResponse
 from app.services.document_parser import DocumentParser
 from app.services.llm_analyzer import llm_analyzer
 from app.services.vector_store import vector_store
+from app.core.deps import provider_context, enforce_quota
+from app.services.providers.base import ProviderContext
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -16,7 +18,9 @@ async def create_job(
     company: Optional[str] = Form(None),
     raw_text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _quota: None = Depends(enforce_quota),
+    ctx: ProviderContext = Depends(provider_context)
 ):
     text_content = ""
     if file:
@@ -30,7 +34,7 @@ async def create_job(
     if not text_content:
         raise HTTPException(status_code=400, detail="Extracted Job Description text is empty.")
 
-    parsed_profile = await llm_analyzer.parse_open_schema_profile(text_content, is_job=True)
+    parsed_profile = await llm_analyzer.parse_open_schema_profile(text_content, is_job=True, ctx=ctx)
 
     job_db = JobDescription(
         title=title or parsed_profile.get("canonical_title", "Backend Engineer"),

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sparkles, Users, GraduationCap, ShieldCheck, History, Award } from 'lucide-react';
+import { Sparkles, Users, GraduationCap, ShieldCheck, History, Award, Settings } from 'lucide-react';
 
-export default function Navbar({ activeMode, setActiveMode, redactPii, setRedactPii, onOpenHistory }) {
+export default function Navbar({ activeMode, setActiveMode, redactPii, setRedactPii, onOpenHistory, onOpenSettings, providerStatus }) {
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-gray-800 px-6 py-3.5 flex items-center justify-between">
       {/* Brand Logo */}
@@ -68,6 +68,22 @@ export default function Navbar({ activeMode, setActiveMode, redactPii, setRedact
         >
           <History className="w-4 h-4 text-blue-400" />
           <span>Analysis History</span>
+        </button>
+
+        {/* AI Provider Settings Trigger */}
+        <button
+          onClick={onOpenSettings}
+          className="flex items-center space-x-2 bg-gray-800/80 hover:bg-gray-700/80 text-gray-200 text-xs px-3.5 py-2 rounded-lg border border-gray-700 transition"
+        >
+          <div className="relative">
+            <Settings className="w-4 h-4 text-blue-400" />
+            <span
+              className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${
+                providerStatus?.configured ? 'bg-emerald-400' : 'bg-amber-400'
+              }`}
+            />
+          </div>
+          <span>{providerStatus?.configured ? providerStatus.label : 'AI Provider'}</span>
         </button>
       </div>
     </header>

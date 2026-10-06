@@ -5,11 +5,18 @@ from app.database import get_db
 from app.models.db_models import JobDescription, CandidateResume, AnalysisResult
 from app.schemas.schemas import AnalysisRequest, AnalysisResponse
 from app.services.llm_analyzer import llm_analyzer
+from app.core.deps import provider_context, enforce_quota
+from app.services.providers.base import ProviderContext
 
 router = APIRouter(prefix="/analyze", tags=["Analysis"])
 
 @router.post("/", response_model=AnalysisResponse)
-async def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
+async def run_analysis(
+    request: AnalysisRequest,
+    db: Session = Depends(get_db),
+    _quota: None = Depends(enforce_quota),
+    ctx: ProviderContext = Depends(provider_context)
+):
     candidates = db.query(CandidateResume).filter(CandidateResume.id.in_(request.candidate_ids)).all()
     if not candidates:
         raise HTTPException(status_code=404, detail="Selected candidates not found.")
@@ -45,7 +52,8 @@ async def run_analysis(request: AnalysisRequest, db: Session = Depends(get_db)):
         eval_res = await llm_analyzer.analyze_candidate_match(
             candidate_text=cand_text,
             job_text=job_text,
-            mode=request.mode
+            mode=request.mode,
+            ctx=ctx
         )
 
         cand_id_str = str(cand.id)

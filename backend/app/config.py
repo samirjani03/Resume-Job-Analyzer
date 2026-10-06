@@ -18,7 +18,13 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "ParagonAI/voldemort-codex-cloud-preview:gemma4"  # Falls back gracefully to llama3.1:8b or qwen3 if available
     EMBEDDING_MODEL: str = "BAAI/bge-m3"  # Fallback to sentence-transformers/all-MiniLM-L6-v2 if BGE-M3 download takes time
-    
+
+    # Multi-provider settings
+    DEFAULT_PROVIDER: str = "ollama"           # ollama | ollama_cloud | gemini | openrouter
+    REQUIRE_PROVIDER: bool = False             # True on hosted deploys: 401 until user saves a key
+    DAILY_QUOTA: int = 20                      # LLM calls per device per day (hosted mode only)
+    ALLOWED_ORIGINS: str = "*"                 # Comma-separated; set to Vercel domain in production
+
     # Upload limits
     MAX_UPLOAD_SIZE_MB: int = 15
     ALLOWED_EXTENSIONS: set = {".pdf", ".docx", ".txt"}
