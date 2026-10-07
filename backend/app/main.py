@@ -1,12 +1,31 @@
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from app.config import settings, BASE_DIR
 from app.database import engine, Base
 from app.models import db_models  # Ensures models are registered
 from app.api import jobs, resumes, analyze, search, history, interviews, settings as settings_api
 
 # Create database tables automatically on startup
 Base.metadata.create_all(bind=engine)
+
+
+def _find_dist() -> Path | None:
+    """Built React app, if present: backend/dist (Docker) or frontend/dist (local)."""
+    for cand in (Path(BASE_DIR) / "dist", Path(BASE_DIR).parent / "frontend" / "dist"):
+        if (cand / "index.html").is_file():
+            return cand
+    return None
+
+
+# Option A: FastAPI serves the built React app ONLY when SERVE_FRONTEND=true
+# (set exclusively inside the Docker image). `python start.py` never sets it,
+# so local behavior stays exactly as before.
+DIST_DIR = _find_dist() if os.environ.get("SERVE_FRONTEND", "").strip().lower() in ("1", "true", "yes") else None
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -35,6 +54,8 @@ app.include_router(settings_api.router, prefix=settings.API_V1_STR)
 
 @app.get("/")
 def root():
+    if DIST_DIR:
+        return FileResponse(DIST_DIR / "index.html")
     return {
         "status": "online",
         "service": settings.PROJECT_NAME,
@@ -44,3 +65,8 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+
+# Mounted last so every API route above wins; serves /assets/* etc. in Docker.
+if DIST_DIR:
+    app.mount("/", StaticFiles(directory=str(DIST_DIR), html=True), name="frontend")

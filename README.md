@@ -25,6 +25,92 @@ Your AI usage is billed to **your own key** (many models are free). The platform
 
 ---
 
+## 🐳 Run with Docker (one container, one command)
+
+Runs the **entire app** (API + built React frontend) in a single container — no Python, no Node, no Ollama install needed.
+
+### 🐣 Absolute beginner — do exactly this, in order
+
+1. **Install Docker Desktop** from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) (free). Restart your computer if it asks.
+2. **Get this project:** `git clone <repo-url>` (or download the ZIP from GitHub and extract it).
+3. **Open a terminal inside the project folder** — shortcut: in File Explorer, click the folder's address bar, type `cmd`, press Enter.
+4. **Start the app** (first run downloads everything ≈ 3–10 min):
+   ```bash
+   docker compose up -d --build
+   ```
+5. Wait until it says `Started`, then open **http://localhost:8000** in your browser.
+6. Click **⚙ AI Provider** → choose **Google Gemini** or **OpenRouter** (free key) → **Test** → **Save & Use**.
+
+Done. Repeat runs only need step 4 without `--build` (`docker compose up -d`).
+
+**Word meanings (so the commands stop looking alien):**
+
+| Word | Meaning | Analogy |
+|---|---|---|
+| **Image** | The baked, ready-to-run package of the whole app | like an `.exe` installer |
+| **Container** | A running instance of the image | like that program running in Task Manager |
+| **Volume** | A folder Docker manages *outside* the container, plugged into it at `/data` | like a USB stick — unplug/replace the container, files stay |
+| **`docker compose up`** | "build if needed, start it" | power button |
+| **`docker compose down`** | "stop it" | power off (your files stay) |
+
+> Prefer clicking over typing? **Docker Desktop** (the app you installed) has *Containers* and *Volumes* tabs that show the same things with start/stop/delete buttons.
+
+### 🔁 The first commands you'll ever use
+
+```bash
+docker compose up -d --build   # 1st run: build + start in background
+docker compose up -d           # later runs: start again (fast, no rebuild)
+docker compose down            # stop — data is KEPT
+```
+
+### 🧰 CHEAT SHEET — "I want to change something simple"
+
+Do any edit in a plain text editor, save, then run `docker compose up -d` (it re-creates the container with your new settings automatically).
+
+| I want to… | Do this |
+|---|---|
+| Use a different port (8000 → 8080) | create `.env` in the project root with `PORT=8080` |
+| Allow more AI analyses per day | `.env` → `DAILY_QUOTA=50` |
+| Pin my own encryption key | `.env` → `ENCRYPTION_KEY=<your Fernet key>` (leave empty to use the auto-generated file) |
+| Send interview emails via Resend | `.env` → `RESEND_API_KEY=...`, `RECIPIENT_CANDIDATE=...` |
+| See what the app is doing | `docker compose logs -f` (exit with `Ctrl+C`) |
+| Restart the app | `docker compose restart` |
+| Apply code changes I just pulled | `docker compose up -d --build` |
+| **Erase everything and start fresh** | `docker compose down -v` |
+| Back up the database to my PC | `docker cp talentmatch:/data/talentmatch.db ./talentmatch-backup.db` |
+| Restore a database backup | `docker cp ./talentmatch-backup.db talentmatch:/data/talentmatch.db` then `docker compose restart` |
+| See my encryption key | `docker exec talentmatch cat /data/.encryption_key` |
+| Peek inside the container | `docker exec talentmatch sh` (type `exit` to leave) |
+| Run my own local Ollama with it | `docker compose down` first, then `docker compose run -p 8000:8000 -e REQUIRE_PROVIDER=false -e OLLAMA_BASE_URL=http://host.docker.internal:11434 app` |
+| Update after new code is pushed | `git pull` then `docker compose up -d --build` |
+| Stop the app but keep it ready | `docker compose down` (later: `docker compose up -d`) |
+
+All settings above live in an optional **`.env`** file in the project root (one `NAME=value` per line). Docker Compose reads it automatically — no other wiring needed. [`.env.example`](.env.example) lists every variable with comments.
+
+### Where Docker stores your data (persistent volume)
+
+You never create the volume yourself — the first `docker compose up` auto-creates the named volume `resume-job-analyzer_talentmatch-data` and plugs it into the container at **`/data`**. It survives container rebuilds and image upgrades; only `docker compose down -v` deletes it.
+
+- List volumes: `docker volume ls`
+- Show its real location on your PC: `docker volume inspect resume-job-analyzer_talentmatch-data`
+
+| File in the volume | What it is |
+|---|---|
+| `/data/talentmatch.db` | SQLite database (resumes, analyses, interviews, history) |
+| `/data/.encryption_key` | **Encryption key for saved provider API keys** (auto-generated on first run) |
+| `/data/chroma_db/` | Vector store (semantic search) |
+| `/data/fastembed_cache/` | Embedding model cache (avoids re-downloading) |
+
+**🔑 Finding the encryption key:** the app generates it automatically — you never have to create it.
+- Inside the container: `docker exec talentmatch cat /data/.encryption_key`
+- On the host: Docker Desktop → *Volumes* → the volume above → *Browse* (or `docker volume inspect resume-job-analyzer_talentmatch-data` for the path)
+
+⚠️ Back this key up if you back up `talentmatch.db` — without it, saved provider keys cannot be decrypted. (If you set the `ENCRYPTION_KEY` env var in `.env`, that value is used instead of the file.) In non-Docker local runs the same key lives at `backend/.encryption_key`.
+
+Your normal **`python start.py`** workflow (Ollama + backend + Vite dev servers) is completely unaffected — Docker settings only exist inside the image.
+
+---
+
 ## 🚀 Beginner Step-by-Step Setup Guide (After `git clone`)
 
 If you just cloned this repository, follow these exact step-by-step commands to get everything running in under 3 minutes:
@@ -36,7 +122,7 @@ Ensure you have installed:
 3. **Ollama** ([ollama.com](https://ollama.com/))
 
 ---
-
+*(Note: If you want simplest running approach, go to step 4).*
 ### Step 1: Start & Pull Ollama Model
 Open a terminal window and run:
 ```bash

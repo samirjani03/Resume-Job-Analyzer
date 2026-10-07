@@ -6,14 +6,16 @@ from cryptography.fernet import Fernet
 
 from app.config import settings, BASE_DIR
 
-_KEY_FILE = Path(BASE_DIR) / ".encryption_key"
+# ENCRYPTION_KEY_FILE lets Docker mount the key file on a persistent volume
+# (default: backend/.encryption_key for local dev).
+_KEY_FILE = Path(os.environ.get("ENCRYPTION_KEY_FILE") or (Path(BASE_DIR) / ".encryption_key"))
 
 
 def _load_or_create_key() -> bytes:
     """
     Resolution order:
     1. ENCRYPTION_KEY env var (Render/hosted deployments)
-    2. backend/.encryption_key file (local dev persistence)
+    2. ENCRYPTION_KEY_FILE / backend/.encryption_key (local dev + Docker volume)
     3. Generate a new key and persist it to the file
     """
     env_key = os.environ.get("ENCRYPTION_KEY", "").strip()
@@ -24,6 +26,7 @@ def _load_or_create_key() -> bytes:
         return _KEY_FILE.read_bytes().strip()
 
     new_key = Fernet.generate_key()
+    _KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
     _KEY_FILE.write_bytes(new_key)
     try:
         _KEY_FILE.chmod(0o600)

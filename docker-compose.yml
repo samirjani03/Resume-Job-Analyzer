@@ -1,0 +1,29 @@
+# TalentMatch AI — single container, persistent data.
+#   Start:  docker compose up -d --build
+#   Open:   http://localhost:8000
+#   Stop:   docker compose down        (data kept)
+#   Reset:  docker compose down -v     (DELETES all data)
+
+services:
+  app:
+    build:
+      context: .
+    image: talentmatch-ai:latest
+    container_name: talentmatch
+    ports:
+      - "${PORT:-8000}:8000"
+    # Any variable set in a local .env file is picked up automatically (all optional).
+    environment:
+      REQUIRE_PROVIDER: ${REQUIRE_PROVIDER:-true}
+      DAILY_QUOTA: ${DAILY_QUOTA:-20}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RECIPIENT_CANDIDATE: ${RECIPIENT_CANDIDATE:-}
+      RECIPIENT_RECRUITER: ${RECIPIENT_RECRUITER:-}
+    volumes:
+      # Survives container rebuilds: sqlite db, encryption key, vector store, caches
+      - talentmatch-data:/data
+    restart: unless-stopped
+
+volumes:
+  talentmatch-data:

@@ -1,0 +1,25 @@
+# Keep the Docker build context small and reproducible
+.git
+.gitignore
+.vscode
+.idea
+
+# Python
+**/__pycache__
+**/*.pyc
+backend/venv/
+backend/*.db
+backend/chroma_db/
+backend/.encryption_key
+
+# Node / frontend (rebuilt inside the image)
+frontend/node_modules/
+frontend/dist/
+
+# Secrets & local config — passed at runtime, never baked into the image
+.env
+
+# Docs / misc not needed inside the image
+graphify-out/
+*.md
+docker-compose.yml
