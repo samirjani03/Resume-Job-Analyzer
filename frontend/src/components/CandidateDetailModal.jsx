@@ -1,8 +1,8 @@
 import React from 'react';
-import { X, CheckCircle, AlertTriangle, XCircle, Award, FileText, Target, ShieldAlert, Quote, Briefcase, Calendar } from 'lucide-react';
+import { X, CheckCircle, AlertTriangle, XCircle, Award, FileText, Target, ShieldAlert, Quote, Briefcase, Calendar, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export default function CandidateDetailModal({ candidate, analysisData, onClose }) {
+export default function CandidateDetailModal({ candidate, analysisData, onClose, onLaunchInterview }) {
   if (!candidate || !analysisData) return null;
 
   const candId = String(candidate.candidate_id);
@@ -46,6 +46,15 @@ export default function CandidateDetailModal({ candidate, analysisData, onClose 
               </span>
             </div>
             <p className="text-xs text-gray-400 mt-1">File: {candidate.file_name}</p>
+            {onLaunchInterview && (
+              <button
+                onClick={() => onLaunchInterview(candidate, analysisData, 'recruiter')}
+                className="mt-3 flex items-center space-x-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold transition shadow-lg shadow-purple-600/20"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Launch AI Interview</span>
+              </button>
+            )}
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 transition">
             <X className="w-5 h-5" />

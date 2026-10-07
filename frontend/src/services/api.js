@@ -115,3 +115,34 @@ export function testProviderKey(payload) {
 export function getQuota() {
   return request('/settings/quota');
 }
+
+// ---------- AI Interview ----------
+
+export function startInterview(payload) {
+  return request('/interviews/start', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+export function answerInterview(sessionId, answer) {
+  return request(`/interviews/${sessionId}/answer`, {
+    method: 'POST',
+    body: JSON.stringify({ answer }),
+  });
+}
+
+export function getInterview(sessionId) {
+  return request(`/interviews/${sessionId}`);
+}
+
+export function sendInterviewReports(sessionId, payload) {
+  return request(`/interviews/${sessionId}/send-reports`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function endInterview(sessionId, action) {
+  return request(`/interviews/${sessionId}/end`, {
+    method: 'POST',
+    body: JSON.stringify({ action }),
+  });
+}

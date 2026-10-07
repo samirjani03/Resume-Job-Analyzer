@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, Search, Users, CheckCircle, AlertTriangle, XCircle, Award, ArrowUpRight, Columns, RefreshCw, Sparkles, Download } from 'lucide-react';
+import { UploadCloud, FileText, Search, Users, CheckCircle, AlertTriangle, XCircle, Award, ArrowUpRight, Columns, RefreshCw, Sparkles, Download, MessageSquare } from 'lucide-react';
 import { uploadJobDescription, uploadResumes, runAnalysis, searchCandidates } from '../services/api';
 import LoadingModal from './LoadingModal';
 
-export default function RecruiterDashboard({ redactPii, onSelectCandidate, onSelectCompare }) {
+export default function RecruiterDashboard({ redactPii, onSelectCandidate, onSelectCompare, onLaunchInterview }) {
   const [jobTitle, setJobTitle] = useState('Backend Python Developer');
   const [jobCompany, setJobCompany] = useState('');
   const [jobText, setJobText] = useState(`Job Role: Backend Python Developer
@@ -379,13 +379,23 @@ Education: Bachelor's Degree in Computer Engineering or related field`);
                           {(cand.key_strengths || []).slice(0, 2).join(', ')}
                         </td>
                         <td className="py-3.5 px-4 text-right">
-                          <button
-                            onClick={() => onSelectCandidate(cand.candidate_id, analysisResult)}
-                            className="text-purple-400 hover:text-purple-300 font-semibold flex items-center space-x-1 ml-auto"
-                          >
-                            <span>View Audit</span>
-                            <ArrowUpRight className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center justify-end space-x-3">
+                            <button
+                              onClick={() => onLaunchInterview && onLaunchInterview(cand, analysisResult, 'recruiter')}
+                              className="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center space-x-1"
+                              title="Start an AI interview for this candidate"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5" />
+                              <span>AI Interview</span>
+                            </button>
+                            <button
+                              onClick={() => onSelectCandidate(cand, analysisResult)}
+                              className="text-purple-400 hover:text-purple-300 font-semibold flex items-center space-x-1"
+                            >
+                              <span>View Audit</span>
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

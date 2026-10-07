@@ -77,3 +77,44 @@ class AnalysisResult(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     job = relationship("JobDescription", back_populates="analyses")
+
+
+class InterviewSession(Base):
+    """One AI screening / mock interview per candidate. Snapshots resume+JD text so
+    follow-up questions and the final verdict always reference what the candidate
+    actually saw, even if the source resume is edited or deleted later."""
+    __tablename__ = "interview_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    candidate_id = Column(Integer, ForeignKey("candidate_resumes.id"), nullable=False)
+    job_id = Column(Integer, ForeignKey("job_descriptions.id"), nullable=True)
+    device_id = Column(String(64), nullable=True, index=True)
+    mode = Column(String(20), nullable=False, default="recruiter")   # recruiter | student
+    status = Column(String(20), nullable=False, default="active")    # active | completed
+    total_questions = Column(Integer, nullable=False, default=4)
+    resume_snapshot = Column(Text, nullable=False)
+    job_snapshot = Column(Text, nullable=True)
+    report = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    messages = relationship(
+        "InterviewMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        order_by="InterviewMessage.id",
+    )
+
+
+class InterviewMessage(Base):
+    """A single AI or candidate turn inside an interview session (full transcript)."""
+    __tablename__ = "interview_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("interview_sessions.id"), nullable=False)
+    role = Column(String(10), nullable=False)   # ai | candidate
+    content = Column(Text, nullable=False)
+    question_no = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    session = relationship("InterviewSession", back_populates="messages")

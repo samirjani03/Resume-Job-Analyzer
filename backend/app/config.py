@@ -29,6 +29,15 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 15
     ALLOWED_EXTENSIONS: set = {".pdf", ".docx", ".txt"}
 
+    # Interview report emails (Resend REST API — no SMTP port needed on Render free).
+    # All optional: if RESEND_API_KEY is unset, "Send Reports" returns downloadable
+    # HTML drafts instead so the feature still demos with zero email setup.
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "TalentMatch AI <onboarding@resend.dev>"
+    EMAIL_FROM_NAME: str = "TalentMatch AI"
+    RECIPIENT_CANDIDATE: str = ""
+    RECIPIENT_RECRUITER: str = ""
+
     class Config:
         case_sensitive = True
 

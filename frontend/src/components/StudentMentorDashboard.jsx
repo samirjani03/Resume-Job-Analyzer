@@ -3,12 +3,12 @@ import {
   UploadCloud, GraduationCap, Sparkles, CheckCircle, ArrowRight, BookOpen, Target, 
   Download, RefreshCw, Award, Zap, Compass, ChevronDown, ChevronUp, FileText, Code, 
   AlertTriangle, Check, X, Copy, Share2, Star, Layers, ShieldCheck, Cpu, Database, 
-  BarChart3, CheckSquare, Wrench, Calendar, ExternalLink, Lightbulb
+  BarChart3, CheckSquare, Wrench, Calendar, ExternalLink, Lightbulb, MessageSquare
 } from 'lucide-react';
 import { uploadResumes, runAnalysis } from '../services/api';
 import LoadingModal from './LoadingModal';
 
-export default function StudentMentorDashboard({ redactPii }) {
+export default function StudentMentorDashboard({ redactPii, onLaunchInterview }) {
   const [resumeFile, setResumeFile] = useState(null);
   const [targetRole, setTargetRole] = useState('');
   const [targetJdText, setTargetJdText] = useState('');
@@ -238,6 +238,16 @@ ${(suite.weekly_roadmap || []).map(w => `Week ${w.week}: ${w.title} -> ${w.actio
 
               {/* Quick Action Buttons */}
               <div className="flex items-center space-x-3">
+                {onLaunchInterview && (
+                  <button
+                    onClick={() => onLaunchInterview(candidateInfo, analysisResult, 'student')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg shadow-emerald-600/20 flex items-center space-x-2 transition"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Mock Interview</span>
+                  </button>
+                )}
+
                 <button
                   onClick={handleCopyAdvice}
                   className="bg-gray-900 hover:bg-gray-800 text-gray-200 text-xs px-4 py-2.5 rounded-xl border border-gray-800 flex items-center space-x-2 transition"

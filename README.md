@@ -152,6 +152,39 @@ OLLAMA_BASE_URL: str = "http://localhost:11434"
 
 ---
 
+## 🎙️ AI Interview (Chat Interview + Dual Report)
+
+A chat-based conversational interview that runs entirely inside the app: a human-sounding AI interviewer asks 3–6 tailored questions (built from the uploaded resume + job description), challenges vague or dodged answers with follow-ups, then scores the session and produces **two reports**:
+
+- **Candidate Feedback** — interview score /100, recommendation badge, metric bars (communication, technical depth, critical thinking, role alignment), and coaching ("what you did well", "where to improve", "next steps").
+- **Recruiter Verdict** — Proceed / Hold headline, rationale, resume-consistency check, claim verification (Verified / Unsupported / Contradicted with evidence quotes), strengths, development areas, and flags.
+- **Transcript** — the full conversation.
+
+Reports are **never emailed automatically**. A recruiter clicks *Release Reports* and either types emails (sent via [Resend](https://resend.com) REST API when `RESEND_API_KEY` is configured) or downloads polished standalone `.html` drafts when email is not configured.
+
+Interview UX guardrails:
+- **End Interview** button (not just the X) → choose *End & get report* (stops early, scores the answers given, min 1) or *Discard* (abandoned, no report) or *Keep going*.
+- **Close (X) = pause**: the active session is stored in `sessionStorage` and the interview reopens exactly where you left it, even after a refresh. Starting a new interview auto-archives the previous one (`abandoned`).
+- **Anti-paste**: pasting and right-click are blocked in the answer box (type your own answer); copy stays enabled everywhere else.
+- **Exports**: report → *Copy summary* / *Markdown* / *JSON*; transcript → *HTML* / *.md*.
+- **Answer cap**: 2000 characters. **Quota**: remaining daily AI calls shown in the header, with a friendly block at 0.
+
+Entry points:
+- **Recruiter mode**: `AI Interview` in the leaderboard Actions column, or `Launch AI Interview` inside the candidate audit modal.
+- **Student mode**: `Mock Interview` button in the mentorship hero banner (`mode=student`, no job required).
+
+```bash
+# Optional email delivery (Render free tier blocks SMTP, so Resend's HTTP API is used)
+RESEND_API_KEY=re_xxx
+EMAIL_FROM="TalentMatch AI <onboarding@resend.dev>"
+RECIPIENT_CANDIDATE=candidate@example.com   # optional fallback recipients
+RECIPIENT_RECRUITER=recruiter@example.com
+```
+
+API: `POST /api/v1/interviews/start`, `POST /api/v1/interviews/{id}/answer`, `POST /api/v1/interviews/{id}/end` (`{"action": "report" | "discard"}`), `GET /api/v1/interviews/{id}`, `POST /api/v1/interviews/{id}/send-reports` (all device-locked and quota-counted; the evaluation counts as part of the daily `DAILY_QUOTA` budget — raise it if interviews are frequent).
+
+---
+
 ## 🕸️ Codebase Knowledge Graph (Graphify)
 
 Graphify builds a navigable graph of the source code and documentation in this repository. The committed graph is under `graphify-out/`; open `graphify-out/graph.html` in a browser, read `graphify-out/GRAPH_REPORT.md`, or query `graphify-out/graph.json` with the CLI.

@@ -6,6 +6,7 @@ import CandidateDetailModal from './components/CandidateDetailModal';
 import SideBySideModal from './components/SideBySideModal';
 import HistoryDrawer from './components/HistoryDrawer';
 import SettingsModal from './components/SettingsModal';
+import AiInterviewModal from './components/AiInterviewModal';
 import { getProviderStatus } from './services/api';
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [providerStatus, setProviderStatus] = useState(null);
   const [toast, setToast] = useState(null);
+  const [interviewContext, setInterviewContext] = useState(null);
 
   useEffect(() => {
     getProviderStatus().then(setProviderStatus).catch(() => {});
@@ -48,6 +50,17 @@ export default function App() {
     setSideBySideData(sbData);
   };
 
+  const handleLaunchInterview = (cand, analysisData, mode = 'recruiter') => {
+    setInterviewContext({
+      candidateId: cand?.candidate_id || cand?.id,
+      candidateName: cand?.candidate_name || cand?.name || 'Candidate',
+      jobTitle: analysisData?.job_title || analysisData?.title || null,
+      jobId: analysisData?.job_id || null,
+      mode,
+    });
+    setSelectedCandidate(null);
+  };
+
   return (
     <div className="min-h-screen bg-[#0b0f19] text-gray-100 flex flex-col font-sans">
       {/* Sticky Glassmorphism Header */}
@@ -68,10 +81,12 @@ export default function App() {
             redactPii={redactPii}
             onSelectCandidate={handleSelectCandidate}
             onSelectCompare={handleSelectCompare}
+            onLaunchInterview={handleLaunchInterview}
           />
         ) : (
           <StudentMentorDashboard
             redactPii={redactPii}
+            onLaunchInterview={handleLaunchInterview}
           />
         )}
       </main>
@@ -88,7 +103,12 @@ export default function App() {
           candidate={selectedCandidate}
           analysisData={activeAnalysisData}
           onClose={() => setSelectedCandidate(null)}
+          onLaunchInterview={handleLaunchInterview}
         />
+      )}
+
+      {interviewContext && (
+        <AiInterviewModal context={interviewContext} onClose={() => setInterviewContext(null)} />
       )}
 
       {sideBySideData && (

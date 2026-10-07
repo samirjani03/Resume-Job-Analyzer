@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from datetime import datetime
 
 # --- Job Schemas ---
@@ -103,3 +103,56 @@ class AnalysisResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Interview Schemas ---
+class InterviewStartRequest(BaseModel):
+    candidate_id: int
+    job_id: Optional[int] = None
+    question_count: int = Field(default=4, ge=3, le=6)
+    mode: str = Field(default="recruiter", description="'recruiter' (AI Interview) or 'student' (Mock Interview)")
+
+
+class InterviewAnswerRequest(BaseModel):
+    answer: str = Field(min_length=1, max_length=2000)
+
+
+class InterviewEndRequest(BaseModel):
+    action: Literal["report", "discard"] = Field(
+        description="'report' -> stop now and score the answers given; 'discard' -> abandon with no report"
+    )
+
+
+class InterviewMessageOut(BaseModel):
+    id: int
+    role: str          # "ai" | "candidate"
+    content: str
+    question_no: Optional[int] = None
+
+    class Config:
+        from_attributes = True
+
+
+class InterviewSessionOut(BaseModel):
+    session_id: int
+    status: str
+    mode: str
+    total_questions: int
+    candidate_name: str
+    job_title: Optional[str] = None
+    messages: List[InterviewMessageOut]
+    report: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+
+class InterviewSendReportsRequest(BaseModel):
+    candidate_email: Optional[str] = None
+    recruiter_email: Optional[str] = None
+
+
+class InterviewSendReportsResponse(BaseModel):
+    delivery: str                  # "email" | "draft"
+    sent_to: List[str]
+    note: Optional[str] = None
+    candidate_html: str
+    recruiter_html: str
